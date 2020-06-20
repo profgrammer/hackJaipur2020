@@ -7,18 +7,42 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
     <script src="https://unpkg.com/ml5@0.4.3/dist/ml5.min.js"></script>  
-    <script src="https://cdn.jsdelivr.net/npm/posenet-similarity/dist/posenet-similarity.min.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/addons/p5.sound.min.js"></script> 
 </head>
 <body>
-    
-
     <script>
 
         let model;
         let targetLabel = 'C';
-        let state = "collection"
+        let state = 'collection';
+        let myEnv;
+        let wave;
+
+        let notes = {
+            C: 261.6256,
+            D: 293.6648,
+            E: 329.6276
+        };
+
+        let t1 = 0.1; // attack time in seconds
+        let l1 = 0.7; // attack level 0.0 to 1.0
+        let t2 = 0.3; // decay time in seconds
+        let l2 = 0.1; // decay level  0.0 to 1.0
+
+
         function setup() {
             createCanvas(400, 400);
+
+            myEnv = new p5.Envelope(t1, l1, t2, l2);
+            myEnv.setADSR(0.05, 0.1, 0.5, 1);
+            myEnv.setRange(1.2, 0);
+
+            wave = new p5.Oscillator();
+            wave.setType('sine');
+            wave.start();
+            wave.freq(440);
+            wave.amp(myEnv);
+
 
             let options = {
                 inputs: ['x', 'y'],
@@ -32,10 +56,10 @@
 
         function keyPressed() {
             if(key === 't') {
-                state = "training"
+                state = 'training';
                 model.normalizeData();
                 let options = {
-                    epochs: 300
+                    epochs: 200
                 };
                 model.train(options, whileTraining, finishedTraining);
             } else {
@@ -50,7 +74,7 @@
 
         function finishedTraining() {
             console.log('finished training');
-            state = 'prediction'
+            state = 'prediction';
         }
 
         function mousePressed() {
@@ -58,15 +82,15 @@
                 x: mouseX,
                 y: mouseY
             };
-            if(state == 'collection'){
-                let target = {
-                    label: targetLabel
-                };
             
            
 
+            if(state == 'collection') {
+                let target = {
+                    label: targetLabel
+                };
+    
                 model.addData(inputs, target);
-
                 stroke(0);
                 noFill();
                 ellipse(mouseX, mouseY, 24);
@@ -74,18 +98,29 @@
                 noStroke();
                 textAlign(CENTER, CENTER);
                 text(targetLabel, mouseX, mouseY);
-            }
-            else if(state == 'prediction'){
-                model.classify(inputs, gotResuts);
+            } else if(state == 'prediction') {
+                model.classify(inputs, gotResults);
             }
         }
 
-        function gotResuts(error, results){
-            if(error){
-                console.log(error);
+        function gotResults(error, results) {
+            if(error) {
+                console.error(error);
                 return;
             }
+
             console.log(results);
+            stroke(0);
+            fill(0, 0, 255, 100);
+            ellipse(mouseX, mouseY, 24);
+            fill(0);
+            noStroke();
+            textAlign(CENTER, CENTER);
+            let label = results[0].label;
+            text(label, mouseX, mouseY);
+
+            wave.freq(notes[label]);
+            myEnv.play();
         }
 
     </script>
