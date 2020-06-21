@@ -8,8 +8,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
     <script src="https://unpkg.com/ml5@0.4.3/dist/ml5.min.js"></script>  
     <script src="p5.sound.min.js"></script> 
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/addons/p5.sound.min.js"></script>  -->
+
+    <style>
+        .spanClass{
+            font-size: 40px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #5c4949
+        }
+
+       
+    </style>
+
 </head>
 <body>
+    <span id="pressKey" class = 'spanClass'>Press C, D, E to change notes and T to start training</span> <br>
+    <span id="playMusic"class = 'spanClass'>Click anywhere to play music! Enjoy 🤩</span><br>
+    <span id ="headingText" class = 'spanClass'>Current State : </span> <span id = "stateName"  class = 'spanClass' style = "color:#eb5454">Collecting the sound notes</span> <br>
+    <span id = "currentKey" class = 'spanClass'>Current Key Pressed: C</span>
+    <br><br><br>
     <script>
 
         let model;
@@ -17,6 +34,9 @@
         let state = 'collection';
         let myEnv;
         let wave;
+        let pk = document.getElementById('pressKey');
+        let pm = document.getElementById('playMusic');
+        let ck = document.getElementById('currentKey');
 
         let notes = {
             C: 261.6256,
@@ -29,10 +49,27 @@
         let t2 = 0.3; // decay time in seconds
         let l2 = 0.1; // decay level  0.0 to 1.0
 
+        function setHidden(element){
+
+        }
+
+        function hide(x) {
+            x.style.display = 'none';
+        }
+
+        function show(x) {
+            x.style.display = 'block';
+        }
 
         function setup() {
-            createCanvas(400, 400);
-
+            show(pk);
+            hide(pm);
+            createCanvas(800, 800);
+            background('#e0ebeb');
+            line(0, 0, 0, width);
+            line(0, 0, height, 0);
+            line(0, width, height, width);
+            line(height, 0, height, width);
             myEnv = new p5.Envelope(t1, l1, t2, l2);
             myEnv.setADSR(0.05, 0.1, 0.5, 1);
             myEnv.setRange(1.2, 0);
@@ -54,16 +91,30 @@
             model = ml5.neuralNetwork(options);
         }
 
+      
+
         function keyPressed() {
             if(key === 't') {
+                newNode = document.getElementById("stateName");
+                newNode.innerHTML="Training";
+                newNode.style.color = "#5689db";
+                hide(ck);
                 state = 'training';
+                
                 model.normalizeData();
                 let options = {
                     epochs: 200
                 };
                 model.train(options, whileTraining, finishedTraining);
             } else {
-                targetLabel = key.toUpperCase();
+                if(key == 'c' || key == 'd' || key == 'e'){
+                    targetLabel = key.toUpperCase();
+                    show(ck);
+                    ck.innerHTML = 'Current Key pressed: ' +targetLabel;
+            
+                    
+                }
+                
             }
 
         }
@@ -73,7 +124,13 @@
         }
 
         function finishedTraining() {
+            hide(pk);
+            show(pm);
+            hide(ck);
             console.log('finished training');
+            newNode = document.getElementById("stateName");
+            newNode.innerHTML="Finished Training";
+            newNode.style.color = "#64c957";
             state = 'prediction';
         }
 
@@ -99,6 +156,10 @@
                 textAlign(CENTER, CENTER);
                 text(targetLabel, mouseX, mouseY);
             } else if(state == 'prediction') {
+                hide(ck);
+                newNode = document.getElementById("stateName");
+                newNode.innerHTML="Predicting the sound for you! :)";
+                newNode.style.color = "#c23a92";
                 model.classify(inputs, gotResults);
             }
         }
@@ -124,5 +185,6 @@
         }
 
     </script>
+    </div>
 </body>
 </html>
